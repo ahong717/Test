@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>調光器 Web 控制台 S1.1</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+
+    /* Range Slider Styling */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 8px;
+      border-radius: 9999px;
+    }
+    .dark input[type="range"]::-webkit-slider-runnable-track {
+      background: #1e293b;
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      background: #e2e8f0;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      margin-top: -6px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #0284c7;
+      box-shadow: 0 0 10px rgba(2, 132, 199, 0.4);
+      transition: all 0.15s ease-in-out;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+      background: #0369a1;
+    }
+
+    /* S1.1 — restrained industrial instrument theme */
+    :root {
+      --panel-bg: #f7f8f9;
+      --panel-edge: #aeb7c0;
+      --panel-edge-dark: #3c4853;
+      --ink: #1d2730;
+      --muted: #62707c;
+      --instrument-blue: #006f9e;
+      --instrument-blue-dark: #07536f;
+      --instrument-amber: #c78b00;
+      --console: #10181e;
+    }
+
+    body.instrument-console {
+      background: #e7eaed !important;
+      color: var(--ink) !important;
+      font-family: "Segoe UI Variable", "Segoe UI", "Noto Sans TC", Arial, sans-serif !important;
+      letter-spacing: 0;
+    }
+    .dark body.instrument-console {
+      background: #171d22 !important;
+      color: #e1e6ea !important;
+    }
+    body.instrument-console > header {
+      background: #202a32 !important;
+      color: #f4f7f8 !important;
+      border-bottom: 3px solid var(--instrument-blue) !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+    }
+    body.instrument-console > header h1,
+    body.instrument-console > header p {
+      color: inherit !important;
+    }
+    body.instrument-console main {
+      max-width: 1440px !important;
+    }
+    body.instrument-console section,
+    body.instrument-console main > div > div > div {
+      background-color: var(--panel-bg) !important;
+      border-color: var(--panel-edge) !important;
+      box-shadow: 0 1px 2px rgba(19, 29, 37, .12) !important;
+      backdrop-filter: none !important;
+    }
+    .dark body.instrument-console section,
+    .dark body.instrument-console main > div > div > div {
+      background-color: #222a31 !important;
+      border-color: var(--panel-edge-dark) !important;
+      box-shadow: none !important;
+    }
+    body.instrument-console .rounded-2xl { border-radius: 4px !important; }
+    body.instrument-console .rounded-xl { border-radius: 3px !important; }
+    body.instrument-console .rounded-lg,
+    body.instrument-console .rounded-md { border-radius: 2px !important; }
+    body.instrument-console .shadow-lg,
+    body.instrument-console .shadow-md,
+    body.instrument-console .shadow-sm { box-shadow: none !important; }
+    body.instrument-console h2,
+    body.instrument-console h3 {
+      letter-spacing: .025em;
+    }
+    body.instrument-console section > div:first-child h2,
+    body.instrument-console section > div:first-child h3 {
+      position: relative;
+      padding-left: 10px;
+    }
+    body.instrument-console section > div:first-child h2::before,
+    body.instrument-console section > div:first-child h3::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 1px;
+      bottom: 1px;
+      width: 3px;
+      background: var(--instrument-blue);
+    }
+    body.instrument-console input,
+    body.instrument-console select {
+      border-color: #8995a0 !important;
+      border-radius: 2px !important;
+      box-shadow: inset 0 1px 1px rgba(20, 30, 38, .08) !important;
+    }
+    .dark body.instrument-console input,
+    .dark body.instrument-console select {
+      background: #151b20 !important;
+      border-color: #52606c !important;
+      color: #e6eaed !important;
+    }
+    body.instrument-console button {
+      border-radius: 2px !important;
+      box-shadow: none !important;
+      font-weight: 600;
+    }
+    body.instrument-console .bg-sky-600,
+    body.instrument-console button.bg-sky-600 {
+      background-color: var(--instrument-blue) !important;
+    }
+    body.instrument-console .bg-sky-600:hover,
+    body.instrument-console button.bg-sky-600:hover {
+      background-color: var(--instrument-blue-dark) !important;
+    }
+    body.instrument-console .bg-amber-500 {
+      background-color: var(--instrument-amber) !important;
+    }
+    body.instrument-console #terminalWindow {
+      background: var(--console) !important;
+      border: 1px solid #44515b !important;
+      border-radius: 2px !important;
+      box-shadow: inset 0 0 0 1px #080d10 !important;
+      font-family: Consolas, "JetBrains Mono", monospace !important;
+      line-height: 1.55;
+    }
+    body.instrument-console code,
+    body.instrument-console .font-mono,
+    body.instrument-console input,
+    body.instrument-console select {
+      font-family: Consolas, "JetBrains Mono", monospace !important;
+    }
+    body.instrument-console input[type="range"]::-webkit-slider-thumb {
+      width: 16px;
+      height: 20px;
+      margin-top: -6px;
+      border-radius: 2px;
+      background: var(--instrument-blue);
+      border: 1px solid #084963;
+      box-shadow: none;
+    }
+    body.instrument-console input[type="range"]::-webkit-slider-thumb:hover {
+      transform: none;
+      background: var(--instrument-blue-dark);
+    }
+    body.instrument-console footer {
+      background: #202a32 !important;
+      color: #bac4cc !important;
+      border-top: 2px solid #46535e !important;
+    }
+  </style>
+</head>
+
+<body class="instrument-console h-full flex flex-col font-sans transition-colors duration-200 bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 selection:bg-sky-500 selection:text-white">
+
+  <header class="border-b border-slate-200 dark:border-slate-800/80 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl sticky top-0 z-50 px-4 lg:px-8 py-3.5 shadow-sm transition-colors duration-200">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Clean Title without icons or 3AM branding -->
+      <div>
+        <div class="flex items-center gap-2.5">
+          <h1 class="font-bold text-lg tracking-tight text-slate-900 dark:text-white">調光器 Web 控制台</h1>
+          <span class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-950/80 dark:text-sky-400 border border-sky-200 dark:border-sky-500/30">Modbus ASCII</span>
+          <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">S1.1</span>
+        </div>
+        <p class="text-xs text-slate-500 dark:text-slate-400">RS-232 · MODBUS ASCII CONTROL PANEL</p>
+      </div>
+
+      <!-- Quick Controls: Theme Switcher, Demo Mode, Connection Status -->
+      <div class="flex flex-wrap items-center gap-3">
+        
+        <!-- Light / Dark Theme Switcher Button -->
+        <button id="themeToggleBtn" onclick="toggleTheme()" class="px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-2 bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700 dark:text-slate-200">
+          <i id="themeIcon" class="fa-solid fa-moon text-slate-300"></i>
+          <span id="themeText">切換暗色</span>
+        </button>
+
+        <!-- Demo Mode Switch button -->
+        <div class="hidden relative group" aria-hidden="true">
+          <button id="demoToggleBtn" onclick="toggleDemoMode()" title="不連接實體 COM Port，由網頁模擬裝置回應，用來測試封包與介面；不代表實機通訊已驗證。" class="px-3 py-1.5 rounded-xl text-xs font-mono border transition-all flex items-center gap-2 bg-slate-100 border-slate-300 text-slate-600 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+            <span class="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-600" id="demoDot"></span>
+            <span id="demoText">虛擬模擬器: 關閉</span>
+            <i class="fa-solid fa-circle-info text-sky-500"></i>
+          </button>
+          <div class="pointer-events-none absolute right-0 top-full z-[70] mt-2 hidden w-72 rounded-xl border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 shadow-xl group-hover:block dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            不連接實體 COM Port，由網頁模擬 03／06／10 回應，供介面與封包測試使用；模擬成功不等於實機通訊已驗證。
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+    <!-- Serial Connection Setup: full-width horizontal row -->
+    <section class="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm transition-colors duration-200">
+      <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
+        <h2 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-plug text-sky-500"></i> Serial 連接設定
+        </h2>
+        <span class="text-[10px] font-mono text-slate-400 bg-slate-100 dark:bg-slate-950 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800">Web Serial API</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-3 items-end">
+        <div class="xl:col-span-3">
+          <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">波特率 (Baud Rate)</label>
+          <select id="baudRateSelect" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-200 focus:outline-none focus:border-sky-500 cursor-pointer">
+            <option value="19200" selected>19200 Baud</option>
+            <option value="115200">115200 Baud</option>
+          </select>
+        </div>
+        <div class="xl:col-span-3 grid grid-cols-3 gap-2 text-xs">
+          <div><span class="text-[10px] text-slate-400 block mb-1">Data Bits</span><input type="text" value="8" disabled class="w-full bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg py-2 text-center font-mono text-slate-500 text-xs"></div>
+          <div><span class="text-[10px] text-slate-400 block mb-1">Parity</span><input type="text" value="None" disabled class="w-full bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg py-2 text-center font-mono text-slate-500 text-xs"></div>
+          <div><span class="text-[10px] text-slate-400 block mb-1">Stop Bit</span><input type="text" value="1" disabled class="w-full bg-slate-100 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg py-2 text-center font-mono text-slate-500 text-xs"></div>
+        </div>
+        <div class="xl:col-span-3 flex gap-2">
+          <button id="connectBtn" onclick="openSerialPort()" class="flex-1 bg-sky-600 hover:bg-sky-500 active:bg-sky-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-lg shadow-sky-600/20 transition-all flex items-center justify-center gap-2 text-xs"><i class="fa-solid fa-power-off"></i> 開啟 COM Port</button>
+          <button id="disconnectBtn" onclick="closeSerialPort()" disabled class="bg-slate-200 dark:bg-slate-800 hover:bg-rose-600 dark:hover:bg-rose-600 text-slate-700 dark:text-white disabled:opacity-40 font-medium py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 text-xs"><i class="fa-solid fa-xmark"></i> 斷開</button>
+        </div>
+        <div class="xl:col-span-3">
+          <span class="text-[10px] text-slate-400 block mb-1">連線狀態</span>
+          <div id="serialStatusBadge" class="h-[38px] flex items-center justify-center space-x-2 px-3 rounded-xl text-xs font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+            <span id="statusDot" class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+            <span id="statusText" class="font-mono">COM Port 未連接</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Parameter Switcher Cards Section -->
+    <section class="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm transition-colors duration-200 flex flex-col md:flex-row items-center justify-between gap-5">
+
+      <!-- Dual Toggle Switch Group -->
+      <div class="flex flex-wrap items-center gap-6 w-full md:w-auto">
+        
+        <!-- Parameter 1: Channels -->
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+            控制器通道數量
+          </label>
+          <div class="bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-1">
+            <button id="btn1CH" onclick="setChannelsParam(1)" class="channel-count-btn px-4 py-2 rounded-lg text-xs font-bold transition-all">1</button>
+            <button id="btn2CH" onclick="setChannelsParam(2)" class="channel-count-btn px-4 py-2 rounded-lg text-xs font-bold transition-all">2</button>
+            <button id="btn4CH" onclick="setChannelsParam(4)" class="channel-count-btn px-4 py-2 rounded-lg text-xs font-bold transition-all">4</button>
+            <button id="btn8CH" onclick="setChannelsParam(8)" class="channel-count-btn px-4 py-2 rounded-lg text-xs font-bold transition-all">8</button>
+          </div>
+        </div>
+
+        <!-- Parameter 2: Dimming Levels (256 vs 512) -->
+        <div class="space-y-1.5">
+          <label class="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
+            調光器解析度（請依調光器手冊選擇）
+          </label>
+          <div class="bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-1">
+            <button id="btn256" onclick="setLevelsParam(255)" class="px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+              256 段 <span class="text-[10px] opacity-70 font-mono">(0~255 / 0xFF)</span>
+            </button>
+            <button id="btn512" onclick="setLevelsParam(511)" class="px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20">
+              512 段 <span class="text-[10px] opacity-70 font-mono">(0~511 / 0x01FF)</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Specs Indicator Badge -->
+      <div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs w-full md:w-auto flex items-center justify-between md:justify-end gap-6 font-mono">
+        <div>
+          <span class="text-slate-400 dark:text-slate-500 block text-[10px]">暫存器位址範圍</span>
+          <span id="specRegRange" class="text-sky-600 dark:text-sky-400 font-semibold">0x0001 ~ 0x0004</span>
+        </div>
+        <div class="h-8 w-px bg-slate-200 dark:bg-slate-800"></div>
+        <div>
+          <span class="text-slate-400 dark:text-slate-500 block text-[10px]">最大可調數值</span>
+          <span id="specMaxHex" class="text-amber-600 dark:text-amber-400 font-semibold">0x01FF (511)</span>
+        </div>
+      </div>
+
+    </section>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Left Column: Serial Setup & Presets (4 Cols) -->
+      <div class="lg:col-span-4 space-y-6">
+
+        <!-- Preset Scene Quick Control Card -->
+        <div class="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm transition-colors duration-200">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+              <i class="fa-solid fa-wand-magic-sparkles text-amber-500"></i> 全通道快速情境控制
+            </h3>
+            <span class="text-[10px] font-mono text-slate-400">Sync All</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <button onclick="setAllChannels(0)" class="bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 hover:border-rose-400 text-slate-700 dark:text-slate-300 hover:text-rose-600 dark:hover:text-rose-400 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2">
+              <i class="fa-solid fa-moon text-rose-500"></i> 全關 (0)
+            </button>
+
+            <button id="preset25Btn" onclick="triggerPresetPct(0.25)" class="bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all">
+              25% (128)
+            </button>
+
+            <button id="preset50Btn" onclick="triggerPresetPct(0.50)" class="bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all">
+              50% (255)
+            </button>
+
+            <button id="preset75Btn" onclick="triggerPresetPct(0.75)" class="bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all">
+              75% (383)
+            </button>
+
+            <button id="preset100Btn" onclick="triggerPresetPct(1.0)" class="col-span-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-700 dark:text-amber-300 py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2">
+              <i class="fa-solid fa-sun text-amber-500"></i> 全亮 (100%)
+            </button>
+          </div>
+
+          <button onclick="queryAllChannels()" class="w-full bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-sky-600 dark:text-sky-400 py-2 px-3 rounded-xl text-xs font-medium transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-arrows-rotate"></i> 讀取全通道狀態 (Func 03)
+          </button>
+        </div>
+
+      </div>
+
+      <div class="lg:col-span-8 space-y-6">
+
+        <div class="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-6 shadow-sm transition-colors duration-200">
+          <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+            <div>
+              <h2 id="channelPanelTitle" class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                通道調光控制
+              </h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">滑動拉桿或輸入數值進行即時調光控制</p>
+            </div>
+            <span class="text-xs font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-950 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-800">
+              面板模式: <span class="text-amber-600 dark:text-amber-400 font-bold">EXT (RS232)</span>
+            </span>
+          </div>
+
+          <!-- Dynamic Channels Grid -->
+          <div id="channelsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            <!-- Channel 1 Card -->
+            <div id="ch1Card" class="bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 space-y-3 relative overflow-hidden transition-all">
+              <div id="ch1Glow" class="absolute inset-0 bg-sky-500/0 pointer-events-none transition-all duration-300"></div>
+              
+              <div class="flex items-center justify-between relative z-10">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-lg bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 font-mono font-bold text-xs flex items-center justify-center border border-sky-500/30">1</div>
+                  <span class="font-bold text-sm text-slate-800 dark:text-slate-200">CH1 通道</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="ch1Hex" class="font-mono text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-800">0x0000</span>
+                  <input type="number" id="ch1Num" min="0" max="511" value="0" onchange="onNumInputChange(1, this.value)" class="w-16 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-2 py-1 text-xs font-mono text-right text-sky-600 dark:text-sky-400 focus:outline-none focus:border-sky-500">
+                </div>
+              </div>
+
+              <!-- Slider Bar -->
+              <div class="flex items-center gap-3 relative z-10 py-1">
+                <i class="fa-solid fa-moon text-slate-400 text-xs"></i>
+                <input type="range" id="ch1Slider" min="0" max="511" value="0" oninput="onSliderInput(1, this.value)" onchange="sendChannelValue(1, parseInt(this.value))" class="w-full">
+                <i class="fa-solid fa-sun text-amber-500 text-xs"></i>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-400 relative z-10 pt-1">
+                <span class="font-mono">Reg: 0x0001</span>
+                <div class="flex gap-1.5 font-mono">
+                  <button onclick="setChannelQuick(1, 0)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">0</button>
+                  <button id="ch1MidBtn" onclick="setChannelQuickPct(1, 0.5)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">255</button>
+                  <button id="ch1MaxBtn" onclick="setChannelQuickPct(1, 1.0)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-amber-600 dark:text-amber-400">511</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Channel 2 Card -->
+            <div id="ch2Card" class="bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 space-y-3 relative overflow-hidden transition-all">
+              <div id="ch2Glow" class="absolute inset-0 bg-emerald-500/0 pointer-events-none transition-all duration-300"></div>
+              
+              <div class="flex items-center justify-between relative z-10">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-xs flex items-center justify-center border border-emerald-500/30">2</div>
+                  <span class="font-bold text-sm text-slate-800 dark:text-slate-200">CH2 通道</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="ch2Hex" class="font-mono text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-800">0x0000</span>
+                  <input type="number" id="ch2Num" min="0" max="511" value="0" onchange="onNumInputChange(2, this.value)" class="w-16 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-2 py-1 text-xs font-mono text-right text-emerald-600 dark:text-emerald-400 focus:outline-none focus:border-emerald-500">
+                </div>
+              </div>
+
+              <!-- Slider Bar -->
+              <div class="flex items-center gap-3 relative z-10 py-1">
+                <i class="fa-solid fa-moon text-slate-400 text-xs"></i>
+                <input type="range" id="ch2Slider" min="0" max="511" value="0" oninput="onSliderInput(2, this.value)" onchange="sendChannelValue(2, parseInt(this.value))" class="w-full">
+                <i class="fa-solid fa-sun text-amber-500 text-xs"></i>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-400 relative z-10 pt-1">
+                <span class="font-mono">Reg: 0x0002</span>
+                <div class="flex gap-1.5 font-mono">
+                  <button onclick="setChannelQuick(2, 0)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">0</button>
+                  <button id="ch2MidBtn" onclick="setChannelQuickPct(2, 0.5)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">255</button>
+                  <button id="ch2MaxBtn" onclick="setChannelQuickPct(2, 1.0)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-amber-600 dark:text-amber-400">511</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Channel 3 Card -->
+            <div id="ch3Card" class="bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 space-y-3 relative overflow-hidden transition-all">
+              <div id="ch3Glow" class="absolute inset-0 bg-violet-500/0 pointer-events-none transition-all duration-300"></div>
+              
+              <div class="flex items-center justify-between relative z-10">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-lg bg-violet-500/10 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 font-mono font-bold text-xs flex items-center justify-center border border-violet-500/30">3</div>
+                  <span class="font-bold text-sm text-slate-800 dark:text-slate-200">CH3 通道</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="ch3Hex" class="font-mono text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-800">0x0000</span>
+                  <input type="number" id="ch3Num" min="0" max="511" value="0" onchange="onNumInputChange(3, this.value)" class="w-16 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-2 py-1 text-xs font-mono text-right text-violet-600 dark:text-violet-400 focus:outline-none focus:border-violet-500">
+                </div>
+              </div>
+
+              <!-- Slider Bar -->
+              <div class="flex items-center gap-3 relative z-10 py-1">
+                <i class="fa-solid fa-moon text-slate-400 text-xs"></i>
+                <input type="range" id="ch3Slider" min="0" max="511" value="0" oninput="onSliderInput(3, this.value)" onchange="sendChannelValue(3, parseInt(this.value))" class="w-full">
+                <i class="fa-solid fa-sun text-amber-500 text-xs"></i>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-400 relative z-10 pt-1">
+                <span class="font-mono">Reg: 0x0003</span>
+                <div class="flex gap-1.5 font-mono">
+                  <button onclick="setChannelQuick(3, 0)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">0</button>
+                  <button id="ch3MidBtn" onclick="setChannelQuickPct(3, 0.5)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">255</button>
+                  <button id="ch3MaxBtn" onclick="setChannelQuickPct(3, 1.0)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-amber-600 dark:text-amber-400">511</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Channel 4 Card -->
+            <div id="ch4Card" class="bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 space-y-3 relative overflow-hidden transition-all">
+              <div id="ch4Glow" class="absolute inset-0 bg-rose-500/0 pointer-events-none transition-all duration-300"></div>
+              
+              <div class="flex items-center justify-between relative z-10">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-lg bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-mono font-bold text-xs flex items-center justify-center border border-rose-500/30">4</div>
+                  <span class="font-bold text-sm text-slate-800 dark:text-slate-200">CH4 通道</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="ch4Hex" class="font-mono text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-800">0x0000</span>
+                  <input type="number" id="ch4Num" min="0" max="511" value="0" onchange="onNumInputChange(4, this.value)" class="w-16 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-2 py-1 text-xs font-mono text-right text-rose-600 dark:text-rose-400 focus:outline-none focus:border-rose-500">
+                </div>
+              </div>
+
+              <!-- Slider Bar -->
+              <div class="flex items-center gap-3 relative z-10 py-1">
+                <i class="fa-solid fa-moon text-slate-400 text-xs"></i>
+                <input type="range" id="ch4Slider" min="0" max="511" value="0" oninput="onSliderInput(4, this.value)" onchange="sendChannelValue(4, parseInt(this.value))" class="w-full">
+                <i class="fa-solid fa-sun text-amber-500 text-xs"></i>
+              </div>
+
+              <div class="flex items-center justify-between text-[11px] text-slate-400 relative z-10 pt-1">
+                <span class="font-mono">Reg: 0x0004</span>
+                <div class="flex gap-1.5 font-mono">
+                  <button onclick="setChannelQuick(4, 0)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">0</button>
+                  <button id="ch4MidBtn" onclick="setChannelQuickPct(4, 0.5)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">255</button>
+                  <button id="ch4MaxBtn" onclick="setChannelQuickPct(4, 1.0)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-amber-600 dark:text-amber-400">511</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <section class="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5 shadow-sm transition-colors duration-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+        <h2 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-code text-sky-500"></i> Modbus ASCII 封包發送器（依協定順序排列）
+        </h2>
+        <span class="text-[10px] font-mono text-slate-400">TX Builder</span>
+      </div>
+
+      <!-- Modbus Command Generator Tool Aligned with Protocol Structure -->
+      <div class="bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800/90 rounded-xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-700 dark:text-slate-300">
+            封包欄位
+          </span>
+          <span id="mbDescHint" class="text-[11px] font-mono text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-2.5 py-0.5 rounded border border-sky-200 dark:border-sky-500/20">
+            Func 06: 單筆寫入模式
+          </span>
+        </div>
+
+        <!-- Strict Modbus Sequence Layout -->
+        <div class="flex flex-wrap items-start gap-2 text-xs">
+          
+          <!-- Field 1: Addr -->
+          <div class="w-16 sm:w-20">
+            <label class="text-[10px] font-medium text-slate-500 dark:text-slate-400 block mb-1">站號 (Addr)</label>
+            <input type="text" id="mbAddr" value="01" maxlength="2" oninput="validateAndPreviewModbus()" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-lg px-2 py-1.5 font-mono text-center text-slate-800 dark:text-slate-200 uppercase focus:outline-none focus:border-sky-500">
+          </div>
+
+          <!-- Field 2: Func -->
+          <div class="w-32 sm:w-36">
+            <label class="text-[10px] font-medium text-slate-500 dark:text-slate-400 block mb-1">功能碼 (Func)</label>
+            <select id="mbFunc" onchange="updateMbUi()" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-lg px-2 py-1.5 font-mono text-center text-slate-800 dark:text-slate-200 focus:outline-none focus:border-sky-500">
+              <option value="06" selected>06 (單筆寫入)</option>
+              <option value="03">03 (多筆讀取)</option>
+              <option value="10">10 (多筆寫入)</option>
+            </select>
+          </div>
+
+          <!-- Field 3: Reg Address -->
+          <div class="w-24 sm:w-28">
+            <label id="mbRegLabel" class="text-[10px] font-medium text-slate-500 dark:text-slate-400 block mb-1">暫存器 (Reg)</label>
+            <input type="text" id="mbReg" value="0001" maxlength="4" placeholder="0001" oninput="onModbusRangeInput()" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-lg px-2 py-1.5 font-mono text-center text-slate-800 dark:text-slate-200 uppercase focus:outline-none focus:border-sky-500">
+          </div>
+
+          <!-- Field 4: Value / Quantity -->
+          <div class="w-24 sm:w-28">
+            <label id="mbValLabel" class="text-[10px] font-medium text-slate-500 dark:text-slate-400 block mb-1">寫入數值 (Value)</label>
+            <input type="text" id="mbVal" value="01AB" maxlength="4" placeholder="01AB" oninput="onModbusRangeInput()" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-lg px-2 py-1.5 font-mono text-center text-slate-800 dark:text-slate-200 uppercase focus:outline-none focus:border-sky-500">
+          </div>
+
+          <!-- Field 5: Byte Count (Func 10 only) -->
+          <div id="mbByteCountBox" class="w-20 hidden">
+            <label class="text-[10px] font-medium text-amber-600 dark:text-amber-400 block mb-1">位元數 (Bytes)</label>
+            <input type="text" id="mbByteCount" value="08" disabled class="w-full bg-slate-100 dark:bg-slate-950 border border-amber-500/40 rounded-lg px-2 py-1.5 font-mono text-center text-amber-600 dark:text-amber-400 font-bold cursor-not-allowed">
+          </div>
+
+          <!-- Field 6: Multi-data HEX (Func 10 only) -->
+          <div id="mbExtraBox" class="flex-1 min-w-[200px] hidden">
+            <div class="flex items-center justify-between mb-1">
+              <label id="mbExtraLabel" class="text-[10px] font-medium text-slate-500 dark:text-slate-400">多檔資料 HEX (Data)</label>
+              <button type="button" onclick="enableMultiDataAutoFill()" class="text-[10px] text-sky-600 dark:text-sky-400 hover:underline">依範圍重新填入</button>
+            </div>
+            <input type="text" id="mbExtra" value="0010002000300040" placeholder="00100020..." oninput="multiDataAuto = false; validateAndPreviewModbus()" class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700/80 rounded-lg px-2.5 py-1.5 font-mono text-slate-800 dark:text-slate-200 uppercase focus:outline-none focus:border-sky-500">
+          </div>
+
+          <!-- Field 7: Check LRC -->
+          <div class="w-20">
+            <label class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 block mb-1">校驗碼 (LRC)</label>
+            <input type="text" id="mbLrcField" value="4C" disabled class="w-full bg-slate-100 dark:bg-slate-950 border border-emerald-500/40 rounded-lg px-2 py-1.5 font-mono text-center text-emerald-600 dark:text-emerald-400 font-bold cursor-not-allowed">
+          </div>
+
+          <!-- Field 8: Submit Button -->
+          <div class="w-24 sm:w-28 flex flex-col justify-end self-end">
+            <button onclick="generateAndSendModbus()" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-1.5 px-3 rounded-lg transition-all text-xs flex items-center justify-center gap-1.5 shadow-sm">
+              <i class="fa-solid fa-paper-plane text-[11px]"></i> 發送指令
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Validation Error Message Banner -->
+        <div id="mbErrorMsg" class="hidden text-xs font-mono text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1.5 rounded-lg flex items-center gap-2">
+          <i class="fa-solid fa-triangle-exclamation"></i> <span id="mbErrorText">格式有誤</span>
+        </div>
+
+        <!-- Live Command Preview Bar -->
+        <div class="text-xs font-mono text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-950/80 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <span>完整 ASCII 封包: <code id="mbPreviewCode" class="text-amber-600 dark:text-amber-300 font-bold">:0106000101AB4C\r\n</code></span>
+          <span class="text-[10px] text-slate-400">Modbus ASCII Standard</span>
+        </div>
+      </div>
+
+    </section>
+
+    <section class="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5 shadow-sm transition-colors duration-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+        <h2 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+          <i class="fa-solid fa-terminal text-emerald-500"></i> 通訊終端 (Terminal)
+        </h2>
+        <button onclick="clearTerminal()" class="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
+          <i class="fa-solid fa-trash-can text-slate-400"></i> 清除 Console
+        </button>
+      </div>
+
+      <!-- Terminal Output Stream -->
+      <div id="terminalWindow" class="h-64 bg-slate-900 text-slate-100 border border-slate-800 rounded-xl p-3.5 font-mono text-xs overflow-y-auto space-y-1.5">
+        <div class="text-slate-500 italic">[系統訊息] Web Serial Terminal 已就緒。開啟 COM Port 後即可觀察 ASCII 封包。</div>
+      </div>
+
+      <!-- Manual Command Bar -->
+      <div class="flex gap-2">
+        <input type="text" id="manualInput" placeholder="直接輸入完整 Modbus ASCII 指令, 例: :0106000101AB4C" class="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs font-mono text-sky-600 dark:text-sky-300 focus:outline-none focus:border-sky-500">
+        <button onclick="sendManualCommand()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-5 py-2 rounded-xl text-xs transition-all flex items-center gap-2">
+          <i class="fa-solid fa-paper-plane"></i> 手動發送
+        </button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-200 dark:border-slate-900 bg-white dark:bg-slate-950 px-4 py-4 text-center text-xs text-slate-500 font-mono">
+    256 / 512 段定電流調光器 Web Serial 控制器 · S1.1
+  </footer>
+
+  <script>
+    // --- Global Parameters State ---
+    let currentMaxLevel = 511; // 511 (512段) or 255 (256段)
+    let currentChannels = 4;   // 1, 2, 4 or 8
+    let multiDataAuto = true;
+
+    // Serial Web API state
+    let port = null;
+    let reader = null;
+    let keepReading = false;
+    let rxBuffer = '';
+    let pendingRequests = [];
+
+    // Virtual Demo Mode simulator state
+    let isDemoMode = false;
+    let demoResponseTimers = new Set();
+
+    // Theme Switcher Logic
+    function toggleTheme() {
+      const html = document.documentElement;
+      const themeText = document.getElementById('themeText');
+      const themeIcon = document.getElementById('themeIcon');
+      
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        themeText.textContent = "切換暗色";
+        themeIcon.className = "fa-solid fa-moon text-slate-700";
+      } else {
+        html.classList.add('dark');
+        themeText.textContent = "切換亮色";
+        themeIcon.className = "fa-solid fa-sun text-amber-500";
+      }
+    }
+
+    // Page Initializer
+    window.addEventListener('DOMContentLoaded', () => {
+      ensureExtendedChannelCards();
+      applyParameters();
+      updateMbUi();
+      
+      if (!('serial' in navigator)) {
+        logToTerminal('系統提示', '目前瀏覽器環境未開啟原生 Serial 權限，已建議啟用上方「虛擬模擬器」進行測試。', 'sys');
+      } else {
+        logToTerminal('系統就緒', 'Web Serial API 可用。請選擇 Baud rate 並點擊「開啟 COM Port」。', 'sys');
+      }
+    });
+
+    function ensureExtendedChannelCards() {
+      const container = document.getElementById('channelsContainer');
+      const colors = ['sky', 'emerald', 'violet', 'rose', 'cyan', 'amber', 'indigo', 'fuchsia'];
+      for (let ch = 5; ch <= 8; ch++) {
+        if (document.getElementById(`ch${ch}Card`)) continue;
+        const color = colors[ch - 1];
+        const card = document.createElement('div');
+        card.id = `ch${ch}Card`;
+        card.className = 'hidden bg-slate-50 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4.5 space-y-3 relative overflow-hidden transition-all';
+        card.innerHTML = `
+          <div id="ch${ch}Glow" class="absolute inset-0 pointer-events-none transition-all duration-300"></div>
+          <div class="flex items-center justify-between relative z-10">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-lg bg-${color}-500/10 dark:bg-${color}-500/20 text-${color}-600 dark:text-${color}-400 font-mono font-bold text-xs flex items-center justify-center border border-${color}-500/30">${ch}</div>
+              <span class="font-bold text-sm text-slate-800 dark:text-slate-200">CH${ch} 通道</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="ch${ch}Hex" class="font-mono text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-800">0x0000</span>
+              <input type="number" id="ch${ch}Num" min="0" max="511" value="0" onchange="onNumInputChange(${ch}, this.value)" class="w-16 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-md px-2 py-1 text-xs font-mono text-right text-${color}-600 dark:text-${color}-400 focus:outline-none focus:border-${color}-500">
+            </div>
+          </div>
+          <div class="flex items-center gap-3 relative z-10 py-1">
+            <i class="fa-solid fa-moon text-slate-400 text-xs"></i>
+            <input type="range" id="ch${ch}Slider" min="0" max="511" value="0" oninput="onSliderInput(${ch}, this.value)" onchange="sendChannelValue(${ch}, parseInt(this.value))" class="w-full">
+            <i class="fa-solid fa-sun text-amber-500 text-xs"></i>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-400 relative z-10 pt-1">
+            <span class="font-mono">Reg: 0x${ch.toString(16).padStart(4, '0').toUpperCase()}</span>
+            <div class="flex gap-1.5 font-mono">
+              <button onclick="setChannelQuick(${ch}, 0)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">0</button>
+              <button id="ch${ch}MidBtn" onclick="setChannelQuickPct(${ch}, 0.5)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">255</button>
+              <button id="ch${ch}MaxBtn" onclick="setChannelQuickPct(${ch}, 1.0)" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded text-amber-600 dark:text-amber-400">511</button>
+            </div>
+          </div>`;
+        container.appendChild(card);
+      }
+    }
+
+    // --- STREAMING_CHUNK: Parameter Switching Logic (1/2/4/8CH & 256/512 Segments) ---
+    function setChannelsParam(ch) {
+      if (![1, 2, 4, 8].includes(ch)) return;
+      currentChannels = ch;
+      applyParameters();
+    }
+
+    function setLevelsParam(maxLvl) {
+      currentMaxLevel = maxLvl;
+      applyParameters();
+    }
+
+    function applyParameters() {
+      const is512 = currentMaxLevel === 511;
+      const hexMax = is512 ? "0x01FF" : "0x00FF";
+
+      // 1. Update channel count buttons
+      [1, 2, 4, 8].forEach(ch => {
+        const button = document.getElementById(`btn${ch}CH`);
+        button.className = ch === currentChannels
+          ? 'channel-count-btn px-4 py-2 rounded-lg text-xs font-bold transition-all bg-sky-600 text-white shadow-md shadow-sky-600/20'
+          : 'channel-count-btn px-4 py-2 rounded-lg text-xs font-bold transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white';
+      });
+
+      const btn256 = document.getElementById('btn256');
+      const btn512 = document.getElementById('btn512');
+      if (is512) {
+        btn256.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+        btn512.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20";
+      } else {
+        btn256.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20";
+        btn512.className = "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+      }
+
+      // 2. Update Header Specs Summary Badge
+      document.getElementById('specRegRange').textContent = `0x0001 ~ 0x${currentChannels.toString(16).padStart(4, '0').toUpperCase()}`;
+      document.getElementById('specMaxHex').textContent = `${hexMax} (${is512 ? 511 : 255})`;
+
+      // 3. Update Scene Presets
+      const p25 = is512 ? 128 : 64;
+      const p50 = is512 ? 255 : 128;
+      const p75 = is512 ? 383 : 191;
+      const p100 = currentMaxLevel;
+
+      document.getElementById('preset25Btn').textContent = `25% (${p25})`;
+      document.getElementById('preset50Btn').textContent = `50% (${p50})`;
+      document.getElementById('preset75Btn').textContent = `75% (${p75})`;
+      document.getElementById('preset100Btn').innerHTML = `<i class="fa-solid fa-sun text-amber-500"></i> 全亮 100% (${p100})`;
+
+      // 4. Show only the selected number of channel cards
+      for (let i = 1; i <= 8; i++) {
+        const card = document.getElementById(`ch${i}Card`);
+        if (card) card.classList.toggle('hidden', i > currentChannels);
+      }
+
+      document.getElementById('channelPanelTitle').textContent = `通道調光控制 (${currentChannels} 通道 / 0 ~ ${currentMaxLevel} 階)`;
+
+      // 5. Update Sliders & Inputs
+      for (let i = 1; i <= 8; i++) {
+        const slider = document.getElementById(`ch${i}Slider`);
+        const numInput = document.getElementById(`ch${i}Num`);
+        const midBtn = document.getElementById(`ch${i}MidBtn`);
+        const maxBtn = document.getElementById(`ch${i}MaxBtn`);
+
+        if (slider) slider.max = currentMaxLevel;
+        if (numInput) numInput.max = currentMaxLevel;
+
+        const currentVal = Math.min(parseInt(slider.value) || 0, currentMaxLevel);
+        slider.value = currentVal;
+        numInput.value = currentVal;
+
+        const padLen = is512 ? 4 : 2;
+        document.getElementById(`ch${i}Hex`).textContent = "0x" + currentVal.toString(16).padStart(padLen, '0').toUpperCase();
+
+        if (midBtn) midBtn.textContent = p50;
+        if (maxBtn) maxBtn.textContent = p100;
+
+        updateChannelGlowEffect(i, currentVal);
+      }
+
+      updateMbUi();
+      validateAndPreviewModbus();
+    }
+
+    // --- STREAMING_CHUNK: Channel UI Interaction Handlers ---
+    function onSliderInput(ch, val) {
+      val = parseInt(val, 10);
+      const is512 = currentMaxLevel === 511;
+      const padLen = is512 ? 4 : 2;
+
+      document.getElementById(`ch${ch}Num`).value = val;
+      document.getElementById(`ch${ch}Hex`).textContent = "0x" + val.toString(16).padStart(padLen, '0').toUpperCase();
+      updateChannelGlowEffect(ch, val);
+    }
+
+    function onNumInputChange(ch, val) {
+      val = parseInt(val, 10) || 0;
+      val = Math.max(0, Math.min(currentMaxLevel, val));
+      const is512 = currentMaxLevel === 511;
+      const padLen = is512 ? 4 : 2;
+
+      document.getElementById(`ch${ch}Slider`).value = val;
+      document.getElementById(`ch${ch}Num`).value = val;
+      document.getElementById(`ch${ch}Hex`).textContent = "0x" + val.toString(16).padStart(padLen, '0').toUpperCase();
+      updateChannelGlowEffect(ch, val);
+      sendChannelValue(ch, val);
+    }
+
+    function setChannelQuick(ch, val) {
+      val = Math.max(0, Math.min(currentMaxLevel, val));
+      document.getElementById(`ch${ch}Slider`).value = val;
+      onNumInputChange(ch, val);
+    }
+
+    function setChannelQuickPct(ch, pct) {
+      const val = Math.round(currentMaxLevel * pct);
+      setChannelQuick(ch, val);
+    }
+
+    function triggerPresetPct(pct) {
+      const val = Math.round(currentMaxLevel * pct);
+      setAllChannels(val);
+    }
+
+    function setAllChannels(val) {
+      val = Math.max(0, Math.min(currentMaxLevel, val));
+      const is512 = currentMaxLevel === 511;
+      const padLen = is512 ? 4 : 2;
+
+      for (let i = 1; i <= currentChannels; i++) {
+        document.getElementById(`ch${i}Slider`).value = val;
+        document.getElementById(`ch${i}Num`).value = val;
+        document.getElementById(`ch${i}Hex`).textContent = "0x" + val.toString(16).padStart(padLen, '0').toUpperCase();
+        updateChannelGlowEffect(i, val);
+      }
+
+      // Build Func 10 Multi-Write payload
+      const valHex = val.toString(16).padStart(padLen, '0').toUpperCase();
+      const qtyHex = currentChannels.toString(16).padStart(4, '0');
+      const byteCountHex = (currentChannels * 2).toString(16).padStart(2, '0');
+      const dataPayload = "0001" + qtyHex + byteCountHex + (valHex.repeat(currentChannels));
+      const cmd = buildModbusAscii("01", "10", dataPayload);
+
+      sendSerialData(cmd);
+    }
+
+    function queryAllChannels() {
+      const qtyHex = currentChannels.toString(16).padStart(4, '0');
+      const cmd = buildModbusAscii("01", "03", "0001" + qtyHex);
+      sendSerialData(cmd);
+    }
+
+    function sendChannelValue(channel, value) {
+      const val = Math.max(0, Math.min(currentMaxLevel, value));
+      const addrHex = "01";
+      const funcHex = "06";
+      const regHex = channel.toString(16).padStart(4, '0');
+      const valHex = val.toString(16).padStart(4, '0');
+
+      const cmd = buildModbusAscii(addrHex, funcHex, regHex + valHex);
+      sendSerialData(cmd);
+    }
+
+    function updateChannelGlowEffect(ch, val) {
+      const glowDiv = document.getElementById(`ch${ch}Glow`);
+      if (!glowDiv) return;
+      const opacity = (val / currentMaxLevel) * 0.2;
+      glowDiv.style.backgroundColor = `rgba(2, 132, 199, ${opacity})`;
+    }
+
+    // --- STREAMING_CHUNK: Protocol & LRC Calculation ---
+    function calculateLRC(dataHex) {
+      let sum = 0;
+      for (let i = 0; i < dataHex.length; i += 2) {
+        const byteVal = parseInt(dataHex.substring(i, i + 2), 16);
+        if (!isNaN(byteVal)) {
+          sum = (sum + byteVal) & 0xFF;
+        }
+      }
+      const lrc = (0x100 - sum) & 0xFF;
+      return lrc.toString(16).toUpperCase().padStart(2, '0');
+    }
+
+    function buildModbusAscii(addressHex, functionHex, dataHex) {
+      const payload = (addressHex + functionHex + dataHex).toUpperCase();
+      const lrc = calculateLRC(payload);
+      return `:${payload}${lrc}\r\n`;
+    }
+
+    function fillMultiWriteDataForRange() {
+      const is512 = currentMaxLevel === 511;
+      const start = parseInt(document.getElementById('mbReg').value, 16);
+      const quantity = parseInt(document.getElementById('mbVal').value, 16);
+      const extraInput = document.getElementById('mbExtra');
+      if (!Number.isInteger(start) || !Number.isInteger(quantity) || start < 1 || quantity < 1) return;
+      const valueWidth = is512 ? 4 : 2;
+      extraInput.value = Array.from({ length: quantity }, (_, index) =>
+        Math.min((start + index) * 0x10, currentMaxLevel).toString(16).padStart(valueWidth, '0').toUpperCase()
+      ).join('');
+    }
+
+    function onModbusRangeInput() {
+      if (document.getElementById('mbFunc').value === '10' && multiDataAuto) {
+        fillMultiWriteDataForRange();
+      }
+      validateAndPreviewModbus();
+    }
+
+    function enableMultiDataAutoFill() {
+      multiDataAuto = true;
+      fillMultiWriteDataForRange();
+      validateAndPreviewModbus();
+    }
+
+    // --- STREAMING_CHUNK: Modbus UI & Length Adapter ---
+    function updateMbUi() {
+      const is512 = currentMaxLevel === 511;
+      const func = document.getElementById('mbFunc').value;
+      const regLabel = document.getElementById('mbRegLabel');
+      const valLabel = document.getElementById('mbValLabel');
+      const regInput = document.getElementById('mbReg');
+      const valInput = document.getElementById('mbVal');
+      const byteCountBox = document.getElementById('mbByteCountBox');
+      const extraBox = document.getElementById('mbExtraBox');
+      const extraLabel = document.getElementById('mbExtraLabel');
+      const extraInput = document.getElementById('mbExtra');
+      const hint = document.getElementById('mbDescHint');
+
+      if (func === '06') {
+        hint.textContent = 'Func 06: 單筆寫入';
+        regLabel.textContent = '暫存器 (Reg)';
+        valLabel.textContent = '寫入數值 (Value)';
+        regInput.placeholder = '0001';
+        valInput.placeholder = is512 ? '01AB' : '00AB';
+        if (valInput.value === '0004' || valInput.value === '0002') valInput.value = is512 ? '01AB' : '00AB';
+        byteCountBox.classList.add('hidden');
+        extraBox.classList.add('hidden');
+      } else if (func === '03') {
+        hint.textContent = 'Func 03: 多筆讀取';
+        regLabel.textContent = '起始位址 (Reg)';
+        valLabel.textContent = '數量 Qty（暫存器筆數）';
+        regInput.placeholder = '0001';
+        const readStart = Math.min(Math.max(parseInt(regInput.value, 16) || 1, 1), currentChannels);
+        regInput.value = readStart.toString(16).padStart(4, '0').toUpperCase();
+        const readQty = currentChannels - readStart + 1;
+        valInput.placeholder = readQty.toString(16).padStart(4, '0').toUpperCase();
+        valInput.value = readQty.toString(16).padStart(4, '0').toUpperCase();
+        byteCountBox.classList.add('hidden');
+        extraBox.classList.add('hidden');
+      } else if (func === '10') {
+        hint.textContent = `Func 10: 多筆寫入 (${is512 ? '512段 4位HEX/CH' : '256段 2位HEX/CH'})`;
+        regLabel.textContent = '起始位址 (Reg)';
+        valLabel.textContent = '數量 Qty（暫存器筆數）';
+        regInput.placeholder = '0001';
+        const writeStart = Math.min(Math.max(parseInt(regInput.value, 16) || 1, 1), currentChannels);
+        regInput.value = writeStart.toString(16).padStart(4, '0').toUpperCase();
+        const writeQty = currentChannels - writeStart + 1;
+        valInput.placeholder = writeQty.toString(16).padStart(4, '0').toUpperCase();
+        valInput.value = writeQty.toString(16).padStart(4, '0').toUpperCase();
+        byteCountBox.classList.remove('hidden');
+        extraBox.classList.remove('hidden');
+
+        extraLabel.textContent = is512 ? '多檔資料 HEX (4位/通道)' : '多檔資料 HEX (2位/通道)';
+
+        // Product protocol: 256段 uses 2 HEX/CH; 512段 uses 4 HEX/CH.
+        multiDataAuto = true;
+        fillMultiWriteDataForRange();
+      }
+
+      validateAndPreviewModbus();
+    }
+
+    // --- STREAMING_CHUNK: Real-time Form Validation ---
+    function validateAndPreviewModbus() {
+      const is512 = currentMaxLevel === 511;
+      const addrEl = document.getElementById('mbAddr');
+      const funcEl = document.getElementById('mbFunc');
+      const regEl = document.getElementById('mbReg');
+      const valEl = document.getElementById('mbVal');
+      const byteCountEl = document.getElementById('mbByteCount');
+      const extraEl = document.getElementById('mbExtra');
+      const lrcFieldEl = document.getElementById('mbLrcField');
+      const errBox = document.getElementById('mbErrorMsg');
+      const errText = document.getElementById('mbErrorText');
+
+      let isValid = true;
+      let errorMsg = '';
+
+      const addr = (addrEl.value || '').trim();
+      const func = funcEl.value;
+      const reg = (regEl.value || '').trim();
+      const val = (valEl.value || '').trim();
+      let extra = (extraEl.value || '').trim().toUpperCase();
+
+      [addrEl, regEl, valEl, extraEl].forEach(el => el.classList.remove('border-rose-500', 'bg-rose-500/10'));
+
+      if (!/^[0-9A-Fa-f]{2}$/.test(addr)) {
+        isValid = false;
+        errorMsg = '站號須為 2 位 Hex (如 01)';
+        addrEl.classList.add('border-rose-500', 'bg-rose-500/10');
+      } else if (!/^[0-9A-Fa-f]{4}$/.test(reg)) {
+        isValid = false;
+        errorMsg = '暫存器位址須為 4 位 Hex (如 0001)';
+        regEl.classList.add('border-rose-500', 'bg-rose-500/10');
+      } else if (!/^[0-9A-Fa-f]{4}$/.test(val)) {
+        isValid = false;
+        errorMsg = '數值 / 數量須為 4 位 Hex (如 0004)';
+        valEl.classList.add('border-rose-500', 'bg-rose-500/10');
+      } else if (func === '06') {
+        const regNum = parseInt(reg, 16);
+        const decVal = parseInt(val, 16);
+        if (regNum < 1 || regNum > currentChannels) {
+          isValid = false;
+          errorMsg = `暫存器超出目前 ${currentChannels}CH 範圍 (0001 ~ ${currentChannels.toString(16).padStart(4, '0').toUpperCase()})`;
+          regEl.classList.add('border-rose-500', 'bg-rose-500/10');
+        } else if (decVal > currentMaxLevel) {
+          isValid = false;
+          errorMsg = `寫入數值超出當前型號上限 (${currentMaxLevel} / 0x${currentMaxLevel.toString(16).toUpperCase()})`;
+          valEl.classList.add('border-rose-500', 'bg-rose-500/10');
+        }
+      } else if (func === '03' || func === '10') {
+        const startNum = parseInt(reg, 16);
+        const qtyNum = parseInt(val, 16) || parseInt(val, 10) || 0;
+        const endNum = startNum + qtyNum - 1;
+        if (startNum < 1 || qtyNum < 1 || endNum > currentChannels) {
+          isValid = false;
+          if (startNum >= 1 && startNum <= currentChannels && qtyNum > 0) {
+            const maxQty = currentChannels - startNum + 1;
+            errorMsg = `範圍超出：從 CH${startNum} 開始最多 ${maxQty} 筆（到 CH${currentChannels}）。Qty 是暫存器筆數，不是結束通道。`;
+          } else {
+            errorMsg = `連續範圍無效：起始位址與 Qty 必須落在 CH1 ~ CH${currentChannels}，且 Qty 至少為 1`;
+          }
+          regEl.classList.add('border-rose-500', 'bg-rose-500/10');
+          valEl.classList.add('border-rose-500', 'bg-rose-500/10');
+        }
+
+        if (func === '10') {
+        const expectedByteCount = qtyNum * 2;
+        const expectedByteHex = expectedByteCount.toString(16).padStart(2, '0').toUpperCase();
+        
+        if (byteCountEl) byteCountEl.value = expectedByteHex;
+
+        if (extra.length === (qtyNum * (is512 ? 4 : 2)) + 2 && extra.startsWith(expectedByteHex)) {
+          extra = extra.substring(2);
+          extraEl.value = extra;
+        }
+
+        const expectedHexLen = is512 ? (qtyNum * 4) : (qtyNum * 2);
+
+        if (!/^[0-9A-Fa-f]*$/.test(extra)) {
+          isValid = false;
+          errorMsg = '多檔資料 HEX 包含非十六進制字元';
+          extraEl.classList.add('border-rose-500', 'bg-rose-500/10');
+        } else if (extra.length !== expectedHexLen) {
+          isValid = false;
+          const bytesPerChDesc = is512 ? "4 位 HEX (2 Bytes)" : "2 位 HEX (1 Byte)";
+          errorMsg = `資料長度不符：在 ${is512 ? '512段' : '256段'} 模式下，數量 ${qtyNum} 個暫存器應為 ${expectedHexLen} 位 HEX (每通道 ${bytesPerChDesc}，已輸入 ${extra.length} 位)`;
+          extraEl.classList.add('border-rose-500', 'bg-rose-500/10');
+        } else {
+          const width = is512 ? 4 : 2;
+          const values = Array.from({ length: qtyNum }, (_, index) => parseInt(extra.substring(index * width, (index + 1) * width), 16));
+          if (values.some(item => item > currentMaxLevel)) {
+            isValid = false;
+            errorMsg = `多筆資料含有超出目前解析度上限 ${currentMaxLevel} 的數值`;
+            extraEl.classList.add('border-rose-500', 'bg-rose-500/10');
+          }
+        }
+        }
+      }
+
+      if (isValid) {
+        errBox.classList.add('hidden');
+      } else {
+        errBox.classList.remove('hidden');
+        errText.textContent = errorMsg;
+      }
+
+      let payload = '';
+      if (func === '06' || func === '03') {
+        payload = (addr.padStart(2, '0') + func + reg.padStart(4, '0') + val.padStart(4, '0')).toUpperCase();
+      } else if (func === '10') {
+        const qtyNum = parseInt(val, 16) || 1;
+        const byteCountHex = (qtyNum * 2).toString(16).padStart(2, '0').toUpperCase();
+        payload = (addr.padStart(2, '0') + func + reg.padStart(4, '0') + val.padStart(4, '0') + byteCountHex + extra).toUpperCase();
+      }
+
+      const calculatedLrc = calculateLRC(payload);
+      if (lrcFieldEl) lrcFieldEl.value = calculatedLrc;
+
+      const cmd = `:${payload}${calculatedLrc}\r\n`;
+      document.getElementById('mbPreviewCode').textContent = cmd.replace('\r\n', '\\r\\n');
+      return { cmd, isValid };
+    }
+
+    function generateAndSendModbus() {
+      const { cmd, isValid } = validateAndPreviewModbus();
+      if (!isValid) {
+        logToTerminal('格式錯誤', '請先修正紅色標示欄位後再發送！', 'err');
+        return;
+      }
+      document.getElementById('manualInput').value = cmd.replace('\r\n', '');
+      sendSerialData(cmd);
+    }
+
+    // --- STREAMING_CHUNK: Hardware Web Serial API ---
+    async function openSerialPort() {
+      if (isDemoMode) {
+        logToTerminal('系統提示', '目前處於「虛擬模擬器」模式，請直接點擊按鈕進行模擬發送。', 'sys');
+        return;
+      }
+
+      if (!('serial' in navigator)) {
+        alert('目前瀏覽器或預覽環境不支援 Web Serial API，請開啟右上方「虛擬模擬器」進行功能評測！');
+        return;
+      }
+
+      try {
+        port = await navigator.serial.requestPort();
+        const baudRate = parseInt(document.getElementById('baudRateSelect').value, 10);
+
+        await port.open({ baudRate: baudRate, dataBits: 8, parity: 'none', stopBits: 1 });
+
+        updateConnectionBadge(true, `已連接 (Baud: ${baudRate})`);
+        logToTerminal('連線成功', `Serial COM Port 已成功開啟！`, 'sys');
+
+        keepReading = true;
+        readSerialLoop();
+      } catch (err) {
+        console.error('Serial Error:', err);
+        logToTerminal('連線失敗', err.message || '取消選擇或埠已被佔用', 'err');
+      }
+    }
+
+    async function closeSerialPort() {
+      const wasDemoMode = isDemoMode;
+      if (wasDemoMode) stopDemoSimulator();
+      keepReading = false;
+      if (reader) {
+        try { await reader.cancel(); } catch (e) {}
+      }
+      if (port) {
+        try { await port.close(); } catch (e) {}
+      }
+      port = null;
+      reader = null;
+      updateConnectionBadge(false, 'COM Port 未連接');
+      if (wasDemoMode) {
+        logToTerminal('模擬器已停用', '已由「斷開」按鈕停止虛擬模擬器，並取消尚未回覆的模擬封包。', 'sys');
+      } else {
+        logToTerminal('斷開連線', 'Serial COM Port 已關閉。', 'sys');
+      }
+    }
+
+    async function sendSerialData(dataString) {
+      const cleanDisplay = dataString.replace('\r\n', '');
+      logToTerminal('TX (發送)', cleanDisplay, 'tx');
+      const requestMeta = parseOutgoingRequest(dataString);
+
+      if (isDemoMode) {
+        rememberPendingRequest(requestMeta, 'simulator');
+        const timerId = setTimeout(() => {
+          demoResponseTimers.delete(timerId);
+          if (isDemoMode) simulateDeviceResponse(cleanDisplay);
+        }, 80);
+        demoResponseTimers.add(timerId);
+        return true;
+      }
+
+      if (!port || !port.writable) {
+        logToTerminal('發送失敗', 'COM Port 未開啟！請點擊「開啟 COM Port」或啟用「虛擬模擬器」', 'err');
+        return false;
+      }
+
+      try {
+        const encoder = new TextEncoder();
+        const writer = port.writable.getWriter();
+        await writer.write(encoder.encode(dataString));
+        writer.releaseLock();
+        rememberPendingRequest(requestMeta, 'device');
+        return true;
+      } catch (err) {
+        logToTerminal('TX 錯誤', err.message, 'err');
+        return false;
+      }
+    }
+
+    function parseOutgoingRequest(command) {
+      const normalized = command.replace(/\r?\n$/, '').trim().toUpperCase();
+      if (!normalized.startsWith(':')) return null;
+      const frame = normalized.substring(1);
+      if (!/^[0-9A-F]+$/.test(frame) || frame.length < 14 || frame.length % 2 !== 0) return null;
+      const payload = frame.substring(0, frame.length - 2);
+      const receivedLrc = frame.substring(frame.length - 2);
+      if (calculateLRC(payload) !== receivedLrc) return null;
+
+      const address = payload.substring(0, 2);
+      const functionCode = payload.substring(2, 4);
+      const data = payload.substring(4);
+      const meta = { address, functionCode, raw: normalized, sentAt: Date.now() };
+      if (functionCode === '03') {
+        if (data.length !== 8) return null;
+        meta.startRegister = parseInt(data.substring(0, 4), 16);
+        meta.quantity = parseInt(data.substring(4, 8), 16);
+      } else if (functionCode === '06') {
+        if (data.length !== 8) return null;
+        meta.register = parseInt(data.substring(0, 4), 16);
+        meta.valueHex = data.substring(4, 8);
+      } else if (functionCode === '10') {
+        if (data.length < 10) return null;
+        meta.startRegister = parseInt(data.substring(0, 4), 16);
+        meta.quantity = parseInt(data.substring(4, 8), 16);
+      } else {
+        return null;
+      }
+      return meta;
+    }
+
+    function rememberPendingRequest(requestMeta, source = 'device') {
+      if (!requestMeta) return;
+      requestMeta.source = source;
+      pendingRequests.push(requestMeta);
+      if (pendingRequests.length > 50) pendingRequests.shift();
+    }
+
+    async function readSerialLoop() {
+      const textDecoder = new TextDecoderStream();
+      port.readable.pipeTo(textDecoder.writable);
+      reader = textDecoder.readable.getReader();
+
+      try {
+        while (keepReading) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          if (value) processIncomingChunk(value);
+        }
+      } catch (error) {
+        logToTerminal('RX 錯誤', error.message, 'err');
+      }
+    }
+
+    function processIncomingChunk(chunk) {
+      rxBuffer += chunk;
+      let lineBreakIndex;
+      while ((lineBreakIndex = rxBuffer.indexOf('\r\n')) !== -1) {
+        const fullMessage = rxBuffer.substring(0, lineBreakIndex).trim();
+        rxBuffer = rxBuffer.substring(lineBreakIndex + 2);
+
+        if (fullMessage) {
+          logToTerminal('RX (接收)', fullMessage, 'rx');
+          parseModbusResponse(fullMessage);
+        }
+      }
+    }
+
+    function validateReceivedFrame(msg) {
+      const normalized = msg.trim().toUpperCase();
+      if (!normalized.startsWith(':')) return { ok: false, error: '缺少起始字元「:」' };
+      const frame = normalized.substring(1);
+      if (!/^[0-9A-F]+$/.test(frame)) return { ok: false, error: '回應含有非 HEX 字元' };
+      if (frame.length < 6 || frame.length % 2 !== 0) return { ok: false, error: '回應長度不完整' };
+
+      const payload = frame.substring(0, frame.length - 2);
+      const receivedLrc = frame.substring(frame.length - 2);
+      const calculatedLrc = calculateLRC(payload);
+      if (receivedLrc !== calculatedLrc) {
+        return { ok: false, error: `LRC 錯誤：收到 ${receivedLrc}，應為 ${calculatedLrc}` };
+      }
+      return {
+        ok: true,
+        normalized,
+        address: payload.substring(0, 2),
+        functionCode: payload.substring(2, 4),
+        data: payload.substring(4),
+        receivedLrc
+      };
+    }
+
+    function takePendingRequest(predicate) {
+      const index = pendingRequests.findIndex(predicate);
+      if (index === -1) return null;
+      return pendingRequests.splice(index, 1)[0];
+    }
+
+    function parseModbusResponse(msg, source = 'device') {
+      const isSimulator = source === 'simulator';
+      const frame = validateReceivedFrame(msg);
+      if (!frame.ok) {
+        logToTerminal('RX 驗證失敗', frame.error, 'err');
+        return;
+      }
+
+      if (frame.functionCode === '03') {
+        if (frame.data.length < 2) {
+          logToTerminal('03 回應錯誤', '缺少 Byte Count', 'err');
+          return;
+        }
+        const byteCount = parseInt(frame.data.substring(0, 2), 16);
+        const dataPart = frame.data.substring(2);
+        if (byteCount % 2 !== 0 || dataPart.length !== byteCount * 2) {
+          logToTerminal('03 回應錯誤', `Byte Count ${byteCount} 與資料長度不符`, 'err');
+          return;
+        }
+
+        const quantity = byteCount / 2;
+        const pending = takePendingRequest(item =>
+          item.source === source && item.address === frame.address && item.functionCode === '03' && item.quantity === quantity
+        );
+        if (!pending) {
+          logToTerminal('03 回應未套用', '找不到對應的讀取請求，無法判斷資料應從哪個通道開始', 'err');
+          return;
+        }
+
+        const values = [];
+        for (let i = 0; i < quantity; i++) {
+          const valueHex = dataPart.substring(i * 4, (i + 1) * 4);
+          const value = parseInt(valueHex, 16);
+          if (value > currentMaxLevel) {
+            logToTerminal('03 回應錯誤', `CH${pending.startRegister + i} 數值 0x${valueHex} 超出目前解析度上限`, 'err');
+            return;
+          }
+          values.push(value);
+        }
+
+        const is512 = currentMaxLevel === 511;
+        const padLen = is512 ? 4 : 2;
+        values.forEach((value, index) => {
+          const ch = pending.startRegister + index;
+          const slider = document.getElementById(`ch${ch}Slider`);
+          const numInput = document.getElementById(`ch${ch}Num`);
+          const hexLabel = document.getElementById(`ch${ch}Hex`);
+          if (!slider || !numInput || !hexLabel) return;
+          slider.value = value;
+          numInput.value = value;
+          hexLabel.textContent = '0x' + value.toString(16).padStart(padLen, '0').toUpperCase();
+          updateChannelGlowEffect(ch, value);
+        });
+        const endChannel = pending.startRegister + quantity - 1;
+        logToTerminal(
+          isSimulator ? '03 模擬讀取' : '03 讀取完成',
+          isSimulator
+            ? `已用模擬資料更新 CH${pending.startRegister} ~ CH${endChannel}（非實機回應）`
+            : `已更新 CH${pending.startRegister} ~ CH${endChannel}`,
+          'sys'
+        );
+        return;
+      }
+
+      if (frame.functionCode === '06') {
+        if (frame.data.length !== 8) {
+          logToTerminal('06 回應錯誤', '回應長度應包含4位暫存器與4位數值', 'err');
+          return;
+        }
+        const register = parseInt(frame.data.substring(0, 4), 16);
+        const valueHex = frame.data.substring(4, 8);
+        const pending = takePendingRequest(item =>
+          item.source === source && item.address === frame.address && item.functionCode === '06' && item.register === register && item.valueHex === valueHex
+        );
+        if (!pending) {
+          logToTerminal('06 回應未確認', `收到 Reg ${frame.data.substring(0, 4)} / Value ${valueHex}，但與待回應請求不符`, 'err');
+          return;
+        }
+        logToTerminal(
+          isSimulator ? '06 模擬回應' : '06 寫入確認',
+          isSimulator
+            ? `模擬器已回傳 CH${register} / 0x${valueHex}（僅測試流程，非實機寫入確認）`
+            : `CH${register} 已確認寫入 0x${valueHex}`,
+          'sys'
+        );
+        return;
+      }
+
+      if (frame.functionCode === '10') {
+        if (frame.data.length !== 8) {
+          logToTerminal('10 回應錯誤', '回應長度應包含4位起始位址與4位暫存器數量', 'err');
+          return;
+        }
+        const startRegister = parseInt(frame.data.substring(0, 4), 16);
+        const quantity = parseInt(frame.data.substring(4, 8), 16);
+        const pending = takePendingRequest(item =>
+          item.source === source && item.address === frame.address && item.functionCode === '10' && item.startRegister === startRegister && item.quantity === quantity
+        );
+        if (!pending) {
+          logToTerminal('10 回應未確認', `收到起始 ${frame.data.substring(0, 4)} / 數量 ${frame.data.substring(4, 8)}，但與待回應請求不符`, 'err');
+          return;
+        }
+        logToTerminal(
+          isSimulator ? '10 模擬回應' : '10 寫入確認',
+          isSimulator
+            ? `模擬器已回傳 CH${startRegister} 起連續 ${quantity} 筆（僅測試流程，非實機寫入確認）`
+            : `CH${startRegister} 起連續 ${quantity} 個暫存器已確認`,
+          'sys'
+        );
+        return;
+      }
+
+      logToTerminal('RX 未處理', `功能碼 ${frame.functionCode} 暫未納入解析`, 'err');
+    }
+
+    function sendManualCommand() {
+      let inputStr = document.getElementById('manualInput').value.trim();
+      if (!inputStr) return;
+      if (!inputStr.startsWith(':')) inputStr = ':' + inputStr;
+      if (!inputStr.endsWith('\r\n')) inputStr += '\r\n';
+      sendSerialData(inputStr);
+    }
+
+    // --- STREAMING_CHUNK: Virtual Demo Mode Simulator ---
+    function stopDemoSimulator() {
+      isDemoMode = false;
+      demoResponseTimers.forEach(timerId => clearTimeout(timerId));
+      demoResponseTimers.clear();
+      pendingRequests = pendingRequests.filter(item => item.source !== 'simulator');
+
+      const demoDot = document.getElementById('demoDot');
+      const demoText = document.getElementById('demoText');
+      const demoBtn = document.getElementById('demoToggleBtn');
+      demoDot.className = "w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-600";
+      demoText.textContent = "虛擬模擬器: 關閉";
+      demoBtn.className = "px-3 py-1.5 rounded-xl text-xs font-mono border transition-all flex items-center gap-2 bg-slate-100 border-slate-300 text-slate-600 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200";
+      updateConnectionBadge(false, "COM Port 未連接");
+    }
+
+    function toggleDemoMode() {
+      if (isDemoMode) {
+        stopDemoSimulator();
+        logToTerminal('模擬器已關閉', '已切換回實體串口模式。', 'sys');
+        return;
+      }
+
+      isDemoMode = true;
+      const demoDot = document.getElementById('demoDot');
+      const demoText = document.getElementById('demoText');
+      const demoBtn = document.getElementById('demoToggleBtn');
+      demoDot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+      demoText.textContent = "虛擬模擬器: 啟用";
+      demoBtn.className = "px-3 py-1.5 rounded-xl text-xs font-mono border transition-all flex items-center gap-2 bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400";
+      updateConnectionBadge(true, "虛擬串口 Mode");
+      logToTerminal('模擬器已啟動', `調光器模擬核心就緒 (${currentChannels}CH / ${currentMaxLevel + 1}階)`, 'sys');
+    }
+
+    function simulateDeviceResponse(txCmd) {
+      if (!txCmd.startsWith(':')) return;
+      const body = txCmd.substring(1);
+      const addr = body.substring(0, 2);
+      const func = body.substring(2, 4);
+
+      if (func === '06') {
+        const reply = buildModbusAscii(addr, func, body.substring(4, 12));
+        logToTerminal('RX (模擬)', reply.replace('\r\n', ''), 'rx');
+        parseModbusResponse(reply.replace('\r\n', ''), 'simulator');
+      } else if (func === '10') {
+        const reply = buildModbusAscii(addr, func, body.substring(4, 12));
+        logToTerminal('RX (模擬)', reply.replace('\r\n', ''), 'rx');
+        parseModbusResponse(reply.replace('\r\n', ''), 'simulator');
+      } else if (func === '03') {
+        const startRegister = parseInt(body.substring(4, 8), 16);
+        const quantity = parseInt(body.substring(8, 12), 16);
+        let dataStr = '';
+        for (let i = 0; i < quantity; i++) {
+          const channel = startRegister + i;
+          const val = parseInt(document.getElementById(`ch${channel}Num`)?.value) || 0;
+          dataStr += val.toString(16).padStart(4, '0').toUpperCase();
+        }
+        const byteCount = (quantity * 2).toString(16).padStart(2, '0').toUpperCase();
+        const reply = buildModbusAscii(addr, func, byteCount + dataStr);
+        logToTerminal('RX (模擬)', reply.replace('\r\n', ''), 'rx');
+        parseModbusResponse(reply.replace('\r\n', ''), 'simulator');
+      }
+    }
+
+    function updateConnectionBadge(isConnected, msg) {
+      const dot = document.getElementById('statusDot');
+      const text = document.getElementById('statusText');
+      const badge = document.getElementById('serialStatusBadge');
+      const connectBtn = document.getElementById('connectBtn');
+      const disconnectBtn = document.getElementById('disconnectBtn');
+
+      if (isConnected) {
+        badge.className = "h-[38px] flex items-center justify-center space-x-2 px-3 rounded-xl text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20";
+        dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+        text.textContent = msg;
+        connectBtn.disabled = true;
+        disconnectBtn.disabled = false;
+      } else {
+        badge.className = "h-[38px] flex items-center justify-center space-x-2 px-3 rounded-xl text-xs font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20";
+        dot.className = "w-2 h-2 rounded-full bg-rose-500 animate-pulse";
+        text.textContent = msg;
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+      }
+    }
+
+    function logToTerminal(tag, message, type = 'sys') {
+      const windowEl = document.getElementById('terminalWindow');
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0] + '.' + now.getMilliseconds().toString().padStart(3, '0');
+
+      const row = document.createElement('div');
+      row.className = "flex items-start gap-2 py-0.5 border-b border-slate-800/50";
+
+      let typeBadge = '';
+      if (type === 'tx') {
+        typeBadge = `<span class="bg-sky-500/20 text-sky-400 border border-sky-500/30 px-1.5 rounded text-[10px] font-bold font-mono">TX</span>`;
+      } else if (type === 'rx') {
+        typeBadge = `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 rounded text-[10px] font-bold font-mono">RX</span>`;
+      } else if (type === 'err') {
+        typeBadge = `<span class="bg-rose-500/20 text-rose-400 border border-rose-500/30 px-1.5 rounded text-[10px] font-bold font-mono">ERR</span>`;
+      } else {
+        typeBadge = `<span class="bg-slate-800 text-slate-400 px-1.5 rounded text-[10px] font-mono">SYS</span>`;
+      }
+
+      row.innerHTML = `
+        <span class="text-slate-500 shrink-0 text-[10px]">${timeStr}</span>
+        ${typeBadge}
+        <span class="text-slate-400 font-semibold shrink-0">[${tag}]</span>
+        <span class="${type === 'tx' ? 'text-sky-300' : type === 'rx' ? 'text-emerald-300' : type === 'err' ? 'text-rose-400' : 'text-slate-300'} break-all flex-1">${escapeHtml(message)}</span>
+      `;
+
+      windowEl.appendChild(row);
+      windowEl.scrollTop = windowEl.scrollHeight;
+    }
+
+    function clearTerminal() {
+      document.getElementById('terminalWindow').innerHTML = '<div class="text-slate-500 italic">[系統訊息] Console 紀錄已清除。</div>';
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+  </script>
+</body>
+</html>
